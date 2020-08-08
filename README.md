@@ -1,4 +1,4 @@
-# Neuromorphic Computing using Memristors
+# SNN Pruning and Simulation
 
 ## Team Members
 
