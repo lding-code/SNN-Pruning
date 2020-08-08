@@ -1,0 +1,476 @@
+07/31 11:20
+
+----model 0.1.1
+lowered STDP penalty (was 0.99)
+increased homeostasis duration (was 2000ms)
+removed vt_exc_rest increase on homestasis (only vt_exc is changing)
+
+vt_exc_tau = 5000*ms
+
+offset = 0.75 #STDP offset
+
+* result: only fraction of patterns left
+* long homeostasis duration 
+
+07/31 13:50
+
+
+----model 0.1.2
+Increased STDP penalty
+
+offset = 0.9
+
+* result: still only fraction of patterns left
+
+08/01 00:51
+Reduced homestasis
+
+vt_exc_tau = 2500*ms
+
+* result: Overfitted only fraction of pattern left
+
+----model 0.1.3
+Lowered learning rate (1->0.1)
+
+eta = 0.1/n_input
+
+* result: more pattern features are kept after training
+
+----model 0.1.4
+Increased STDP time constant (allows more synapses to be trained (+ weight)) (was 50*ms)
+
+tauw = 100*ms
+
+* result: = fiant pattern feature (very high weight for several overlapped area / overfitting)
+
+----model 0.1.5
+Increased run time from 50 ms to 100 ms for each sample
+
+start:  22:44
+end:    02:10
+
+* result: = faint pattern feature (some feature synapses suppressed other synapses for every sample)
+
+----model 0.1.6
+
+lowered learning rate (was 0.1)
+eta = 0.01
+lowered offset (was 0.9)
+offset = 0.5
+decreased STDP time constant (was 100 ms)
+tauw = 50 *ms
+
+* result: + better patren representation / still some hot spot 
+
+----model 0.1.7
+
+lowered learning rate (was 0.1)
+eta = 0.05
+
+increased offset (was 0.5)
+offset = 0.75
+
+lowered training time for each sample (was 100 ms)
+run(50*ms)
+
+start:  11:50
+end:    14:05
+
+result: -- very bad, only small fraction of fetures are kept
+
+----model 0.1.8
+
+increased rate multiplier (was 10Hz)
+rate_multiplier = 20Hz
+
+lowred learning rate (was 0.05)
+eta = 0.01
+
+start:  14:09
+end:    16:20
+
+* result: very bad, nothing learned at all
+
+
+----model 0.1.9
+
+increased learning rate back to 0.05
+
+eta = 0.05
+
+start:  16:32
+end:    18:40
+
+better result but still a lot of features missing
+
+---- model 0.1.10
+
+incread learning rate back to 0.1
+
+eta = 0.1
+
+start:  18:50
+end:    ??
+
+* result: as bad as previous one
+
+---- model 0.1.11
+
+decrease rate multiplier (was 20 hz)
+rate_multiplier = 5Hz
+
+* result: bad
+
+---- model 0.1.11
+
+increase rate multiplier (was 5 hz)
+rate_multiplier = 10Hz
+
+increased inhibitory effect (was 0.5 v_post)
+v_post = 0
+
+* result: very bad not much features are kept
+
+---- model 0.1.12
+
+included perma increased threshold rest value (the threshold will drop to a rest value, such rest value will also increase at spike)
+vt_exc_rest = vt_exc_rest * 1.25
+
+* result: much better but zeros are still brighter than others
+
+?? problem: how to distinguish 2 from *??
+
+---- model 0.1.12
+
+change threshold time constant to much longer (was 2500ms)
+
+vt_exc_tau = 5000 * ms
+
+start:  10:51
+end:    12:40
+
+* result: similar to previous one, but zeros are still brighter than other (it's been mis classifying other numbers)
+
+---- model 0.2.1
+
+added new STDP learning mechanic: synapse activity is now taken into account
+
+synapses with more frequent spikes will update with higher weight when post neuron fires.
+for example:
+synapse A had 3 frequent spikes before the post neuron fires and the time difference between the last synapse spike and the post neuron fire is 10 ms
+synapse B had only 1 spikes before the post neuron fire and the time difference is also 10 ms
+
+in the previous model, these two synapses will have same weight update
+in the current build, synapse A will have higher weight update
+
+added new variable: activity
+
+a_init = 0
+
+taua = 100 * ms
+
+amax = 1
+
+amin = 0
+
+ainc = 0.1
+
+new differential equation added to synapse_dynamic
+da/dt = (amin - a) / taua : 1
+
+added new action to synapse_pre_action:
+a += ainc * (amax - a)
+pre_last = t
+v_post += w
+
+was:
+    pre_last = t
+    v_post += w
+
+modified synapse_post_action:
+delta_w = eta * (a - offset)
+w = clip(w + delta_w, 0, 1)
+
+was:
+    new_eta = eta
+    delta_w = eta * ((exp((pre_last - t) / tauw) - offset)) * (wmax - w)
+    w = clip(w + delta_w, 0, 1)
+
+start:  13:48
+end:    15:25
+
+* result: much better, need more training / adjustments
+
+---- model 0.2.2
+
+removed threshold rest value increase (was vt_exc_rest = vt_exc_rest * 1.25)
+
+* result: not good
+
+---- model 0.2.3
+
+reset activity value to 0 for every sample
+input_s.a = 0
+
+reduce offset (was 0.75)
+offset = 0.5
+
+* result: very bad, need offset to stay high
+
+---- model 0.2.4
+
+raised offset to 0.8
+offset = 0.8
+
+* result: very good, weight not smooth enough though
+
+---- model 0.2.5
+
+increased threshold to 0.2 (was 0.1)
+vt_rest = 0.2
+vt_rest_0 = 0.2
+
+* result: not very good. only few numbers show up / could be overfitting
+
+---- model 0.2.6
+
+increase rate_multiplier for more stimulation to the synapses (was 10 Hz)
+
+rate_multiplier = 20Hz
+
+* result: very bad. only few features are kept
+
+---- model 0.2.7
+
+added a variable total_offset. 
+in previous model, only one offset is added to final weight update calculation, which is inaccurate
+every spike has its own weight update caulculation, and each has an offset.
+
+total_offset = 0        at start for each sample
+
+total_offset += offset  on pre-neuron spike event
+
+* result: inverted weight -> very bad.
+
+---- model 0.2.8
+
+reduced offset for each spike to very low value (was 0.8)
+
+offset = 0.1
+
+start:  14:02
+end:    ??
+
+* result: very bad
+
+---- model 0.2.8
+
+remove total_offset 
+
+set offset to 0.5
+
+* result: not good, lot of features are lost
+
+---- model 0.3.1
+
+normalized weight to [0, 1] (wasactual potential update values)
+
+created new jupyter notebook for new model "SNN_model_v2.ipynb"
+
+* result: not very good. amount of weight decrease is much higher than that of weight increase. should change 
+
+---- model 0.3.2
+
+weight offset decreased (was 0.75)
+
+offset = 0.5
+
+* result: very bad, learning rate might be too low
+
+---- model 0.3.3
+
+increased learning rate (was 0.01)
+
+eta = 0.02
+
+* result: better, still very grainy need higher learning rate
+
+---- model 0.3.4
+
+increase learning rate (was 0.02)
+
+eta = 0.05
+
+* result: much better, still need higher learning rate and possibly lower offset
+
+---- model 0.3.5
+
+lower offset (was 0.5)
+
+offset = 0.25
+
+* result: better, still grainy and some neurons have almost no synapse weight learned though
+
+---- model 0.3.6
+
+increase offset back to 0.5 (was 0.25)
+
+offset = 0.25
+
+increase learning rate (was 0.05)
+
+eta = 0.075
+
+* result: less grainy, but some number patterns disappeared
+
+---- model 0.3.7
+
+increase offset for greater penalty (was 0.5)
+
+offset = 0.75
+
+* result: not very good, numbers with smaller strokes are not learned ("1", "7"), run one more time only for numbers "1" to check hypothesis
+
+---- model 0.3.8
+
+only feed number "1" to the model
+
+* result: nothing learned, try to lower the threshold / increase scaler - dominant (major) numbers will still learn quicker and overwhelm minor number -> lower inhibitory penalty
+
+---- model 0.3.8
+
+increased scaller (was 0.5/2500)
+
+scaler = 1 / 2500
+
+lowered inhibitory penalty (was vt = 0 * vt)
+
+now: vt = 0.9 * vt
+
+* result: nothing learned
+
+---- model 0.3.9
+
+lowered threshold: (was 0.2)
+
+vt_exc_rest = 0.1
+
+* result:   still very bad, "0" is the dominating number, needs longer homeostasis duration
+            more weigh decrease than weight increase
+
+---- model 0.3.10
+
+lowered offset (was 0.75)
+
+offset = 0.5
+
+* result: still bad, no other numbers, except "0"
+
+---- model 0.3.11
+try to lower everything (threshold, scaler, learning rate)
+
+vt_exc_rest = 0.01
+vt_exc_inc = 0.01
+
+scaler = 0.1 / 2500
+
+vt_exc_tau = 10000 * ms (was 5000*ms)
+
+also increase activity time constant
+
+taua = 200 * ms (was 100 * ms)
+
+---- model 0.3.12
+
+doing balancing between learning progress of  "1" and that of "0"
+(increase of synapse weight seems to on the same scale of increase of threshold -> raising threshold is not doing anything)
+
+ainc = 0.1
+
+vt_exc = vt_exc + 0.05 * (vt_exc_max - vt_exc)    was (vt_exc = vt_exc + 0.01)
+
+* result: not learning after first 2 samples
+
+---- model 0.3.13
+
+decrease homeostasis duration (was 50000*ms)
+
+vt_exc_tau = 5000 * ms
+
+* result: still not learning enough
+
+---- model 0.3.14
+
+decrease homeostasis duration (was 5000*ms)
+
+vt_exc_tau = 2500 * ms
+
+* result: better, "0" still higher than "1", homeostasis still seems to be too long
+
+---- model 0.3.15
+
+problem could be due to high activity increament -> every number pattern has the same saturated activity (weight update) on spike
+
+ainc = 0.01 (was 0.1)
+
+also increase activity time constant so it stacks better
+
+taua = 250 * ms (was 200 * ms)
+
+* result: not learning enough
+
+---- model 0.3.16
+
+increase learning rate (was 0.0075)
+
+eta = 0.01
+
+* result: super grainy, sould increase learning rate even more
+
+---- model 0.3.17
+
+increase learning rate (was 0.01)
+
+eta = 0.05
+
+* result: very bad, not learning enough
+
+---- model 0.3.18
+
+increase lerning rate (was 0.05)
+
+eta = 1
+
+* result: still faint weight representation, more weight  decrease than weight increase
+
+---- model 0.3.19
+
+changed activity increament back to 0.1 (was 0.01)
+
+ainc = 0.1
+
+*  result: not good, still no "1" and "7"
+
+---- model 0.3.20
+
+increase threshold time cosntant (was 2500 ms)
+
+vt_exc_tau = 1000 ms
+
+lower learning rate (was 1)
+
+eta = 0.1
+
+lower offset (was 0.5)
+
+offset = 0.5
+
+lower activity increament (was 0.1)
+
+ainc = 0.05
+
+inh_w_0 = 0.1
+
+homeostasis increase = 0.01 (was 0.05) == vt_exc_rest
+
+* result: finally something that works, though not very well (overall accuracy = 76.84%)

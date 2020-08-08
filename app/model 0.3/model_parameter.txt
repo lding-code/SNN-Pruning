@@ -1,0 +1,20 @@
+input neuron dynamics:
+    rate_multiplier = 10*hz
+    scaler = 0.1 / 2500
+
+excitatory neuron dynamics:
+    potential:  # differential equation for potential evolution due to leakage
+        v(0) = 0
+        dv/dt = -v/50*ms
+    threshold:  # differential equation for threshold evolution due to homeostasis
+        vt_exc(0) = 0.02
+
+inhibitory neuron dynamics:
+    potential:
+        v(0) = 0
+        dv/dt = -v/100*ms
+    threshold:
+        vt_inh = 0.2
+    on_spike:
+        v = 0
+        v_pre = 0.1 * v_pre # pre neuron potential is halved on inhib spike
